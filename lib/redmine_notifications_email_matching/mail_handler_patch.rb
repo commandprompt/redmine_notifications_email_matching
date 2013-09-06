@@ -28,8 +28,8 @@ module RedmineNotificationsEmailMatching
     def issue_attributes_from_keywords_with_notifications_email_matching(issue)
       issue_attributes_from_keywords_without_notifications_email_matching(issue).tap do |attrs|
         if instance_variable_get("@matched_subject_from_email")
-          # only close issue if there were no updates to it
-          if issue.journals.size == 0
+          # only close issue if there were no updates to it and it is a fresh ticket
+          if issue.journals.size == 0 and (Time.now - issue.created_on) < 15.minutes
             if status_to_close = issue.allowed_status_to_close
               attrs['status_id'] = status_to_close.id
             end
