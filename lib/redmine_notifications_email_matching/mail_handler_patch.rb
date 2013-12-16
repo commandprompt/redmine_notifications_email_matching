@@ -9,7 +9,7 @@ module RedmineNotificationsEmailMatching
       end
     end
 
-    OK_SUBJECT_REGEXP = /.*OK: .*/
+    OK_SUBJECT_REGEXP = /^.*OK: .*$/
 
     def receive_issue_with_notifications_email_matching
       instance_variable_set("@matched_subject_from_email", false)
