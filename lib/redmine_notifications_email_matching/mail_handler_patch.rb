@@ -14,23 +14,42 @@ module RedmineNotificationsEmailMatching
     def receive_issue_with_notifications_email_matching
       instance_variable_set("@matched_subject_from_email", false)
 
-      subject = cleaned_up_subject
-      if subject =~ OK_SUBJECT_REGEXP and
-          (issue = target_project.issues.open.order(:created_on).reverse_order.find_by_subject(subject.sub('OK', 'PROBLEM')))
-        begin
-          instance_variable_set("@matched_subject_from_email", true)
+      ok_subject = cleaned_up_subject
+      if ok_subject =~ OK_SUBJECT_REGEXP
 
-          # update subject silently
-          issue.subject = subject
-          issue.save
+        #
+        # At times, the OK subject might differ from the PROBLEM one
+        # if they include the actual problematic value, e.g. number of
+        # seconds a longest-running DB query was idle.  The exact
+        # matching is not possible in such case.
+        #
+        # We replace any numbers found in the subject with the
+        # substring placeholder for smart-matching.  To avoid matching
+        # numbers that are valid substrings in names like 'apache2' we
+        # requre a leading whitespace before the number.  To properly
+        # match strings like '123s' (for 'seconds') we don't require
+        # the trailing space.
+        #
+        problem_pattern = ok_subject.sub('OK', 'PROBLEM').gsub(/\s\d+(\.\d+)?/, ' %')
+        problem_scope = target_project.issues.open.order(:created_on).where(["#{Issue.table_name}.subject LIKE ?", problem_pattern])
 
-          receive_issue_reply(issue.id)
-        ensure
-          instance_variable_set("@matched_subject_from_email", false)
+        if problem_issue = problem_scope.find(:last)
+          begin
+            instance_variable_set("@matched_subject_from_email", true)
+
+            # update subject silently
+            problem_issue.subject = ok_subject
+            problem_issue.save
+
+            return receive_issue_reply(problem_issue.id)
+            # ^^^^ so that we don't fall through to unpatched logic
+          ensure
+            instance_variable_set("@matched_subject_from_email", false)
+          end
         end
-      else
-        receive_issue_without_notifications_email_matching
       end
+
+      receive_issue_without_notifications_email_matching
     end
 
     def issue_attributes_from_keywords_with_notifications_email_matching(issue)
