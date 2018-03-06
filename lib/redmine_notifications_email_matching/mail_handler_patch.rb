@@ -33,7 +33,7 @@ module RedmineNotificationsEmailMatching
         problem_pattern = ok_subject.sub('OK', 'PROBLEM').gsub(/\s\d+(\.\d+)?/, ' %')
         problem_scope = target_project.issues.open.order(:created_on).where(["#{Issue.table_name}.subject LIKE ?", problem_pattern])
 
-        if problem_issue = problem_scope.find(:last)
+        if problem_issue = problem_scope.last
           begin
             instance_variable_set("@matched_subject_from_email", true)
 
@@ -57,8 +57,8 @@ module RedmineNotificationsEmailMatching
         if instance_variable_get("@matched_subject_from_email")
           # only close issue if there were no updates to it and it is a fresh ticket
           if issue.journals.size == 0 and (Time.now - issue.created_on) < 15.minutes
-            if status_to_close = issue.allowed_status_to_close
-              attrs['status_id'] = status_to_close.id
+            if status_to_close = issue.new_statuses_allowed_to.detect(&:is_closed?)
+              issue.status = status_to_close
             end
           end
         end
