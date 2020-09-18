@@ -4,8 +4,11 @@ module RedmineNotificationsEmailMatching
 
     def self.included(base)
       base.class_eval do
-        alias_method_chain :receive_issue, :notifications_email_matching
-        alias_method_chain :issue_attributes_from_keywords, :notifications_email_matching
+        alias_method :receive_issue_without_notifications_email_matching, :receive_issue
+        alias_method :receive_issue, :receive_issue_with_notifications_email_matching
+
+        alias_method :issue_attributes_from_keywords_without_notifications_email_matching, :issue_attributes_from_keywords
+        alias_method :issue_attributes_from_keywords, :issue_attributes_from_keywords_with_notifications_email_matching
       end
     end
 
