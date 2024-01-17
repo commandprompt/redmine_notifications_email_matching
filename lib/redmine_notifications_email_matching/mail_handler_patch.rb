@@ -16,7 +16,6 @@ module RedmineNotificationsEmailMatching
 
     def receive_issue_with_notifications_email_matching
       instance_variable_set("@matched_subject_from_email", false)
-
       ok_subject = cleaned_up_subject
       if ok_subject =~ OK_SUBJECT_REGEXP
 
@@ -35,7 +34,6 @@ module RedmineNotificationsEmailMatching
         #
         problem_pattern = ok_subject.sub('OK', 'PROBLEM').gsub(/\s\d+(\.\d+)?/, ' %')
         problem_scope = target_project.issues.open.order(:created_on).where(["#{Issue.table_name}.subject LIKE ?", problem_pattern])
-
         if problem_issue = problem_scope.last
           begin
             instance_variable_set("@matched_subject_from_email", true)
